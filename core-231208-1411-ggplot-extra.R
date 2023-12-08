@@ -10,10 +10,20 @@ dir.create(EXTRA_LIB, showWarnings=FALSE, recursive=TRUE);
 ipack <- rownames( installed.packages() );
 if( !("ggplot2" %in% ipack) ) install.packages("ggplot2", repos=CRAN_REPOS);
 if( !("gridExtra" %in% ipack) ) install.packages("gridExtra", repos=CRAN_REPOS);
+if( !("digest" %in% ipack) ) install.packages("digest", repos=CRAN_REPOS);
 
 #---------------------------------------
 library(ggplot2);
 library(gridExtra);
+library(digest);
+
+#---------------------------------------
+runif_hashed <- function(N, app="abcd") {
+   seq <- sapply(paste(1:N, app), digest, algo="md5");
+   seq <- as.double(paste0("0.", gsub("\\D+", "", seq)));
+   return(seq);
+}  
+
 
 #---------------------------------------
 month_diff <- function(sd, ed) {
@@ -60,9 +70,9 @@ ggplot_hist <- function(vals, bins=30, lab='NA') {
 }
 
 #---------------------------------------
-ggplot_scatter <- function(U1, U2) {
-  tdf <- data.frame(U1=U1, U2=U2);
-  g <- ggplot(tdf) + xlab('') + ylab('') + geom_point(aes(x=U1, y=U2));
+ggplot_scatter <- function(U1, U2, col='void') {
+  tdf <- data.frame(U1=U1, U2=U2, col=col);
+  g <- ggplot(tdf) + xlab('') + ylab('') + geom_point(aes(x=U1, y=U2, color=col));
   return(g);
 }
 
