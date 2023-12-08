@@ -8,14 +8,14 @@ dir.create(EXTRA_LIB, showWarnings=FALSE, recursive=TRUE);
 
 #---------------------------------------
 ipack <- rownames( installed.packages() );
-if( !("ggplot2" %in% ipack) ) install.packages("ggplot2", repos=CRAN_REPOS);
-if( !("gridExtra" %in% ipack) ) install.packages("gridExtra", repos=CRAN_REPOS);
-if( !("digest" %in% ipack) ) install.packages("digest", repos=CRAN_REPOS);
+dpack <- c("ggplot2", "gridExtra", "digest"); 
+for(pk in dpack) if( !(pk %in% ipack) ) install.packages(pk, repos=CRAN_REPOS);
 
 #---------------------------------------
 library(ggplot2);
 library(gridExtra);
 library(digest);
+
 
 #---------------------------------------
 runif_hashed <- function(N, app="abcd") {
@@ -23,7 +23,6 @@ runif_hashed <- function(N, app="abcd") {
    seq <- as.double(paste0("0.", gsub("\\D+", "", seq)));
    return(seq);
 }  
-
 
 #---------------------------------------
 month_diff <- function(sd, ed) {
@@ -36,15 +35,16 @@ month_diff <- function(sd, ed) {
 #---------------------------------------
 ggplot_head <- function(df, top=7, lab='NA') {
    tt <- sprintf("rows=%d cols=%d label=%s", nrow(df), ncol(df), lab);
+   hf <- data.frame(panel=tt);
    df <- head(df, top);
-   g <- ggplot() + ggtitle(tt) + annotation_custom(tableGrob(df));
-   g <- g + theme_void();
+   g <- ggplot(hf) + facet_wrap(ncol=1, panel ~ .) + annotation_custom(tableGrob(df));
+#   g <- g + theme_void();
    return(g);
 }
 
 
 #---------------------------------------
-png_close <- function() {
+png_close <- svg_close <- pdf_close <- function() {
   muted <- dev.off();
 }
 
@@ -58,7 +58,10 @@ ggplot_array <- function(...) {
   ncol <- args$ncol;
   if( is.null(ncol) ) ncol <- 1;
 
-  grid.arrange(grobs=grobs, ncol=ncol);
+  mode <- args$mode;
+  if( is.null(mode) ) mode <- "";
+  if(mode == "") grid.arrange(grobs=grobs, ncol=ncol);
+  if(mode == "g") return( ggplot() + annotation_custom(arrangeGrob(grobs=grobs, ncol=ncol)) );
 }
 
 #---------------------------------------
@@ -70,9 +73,11 @@ ggplot_hist <- function(vals, bins=30, lab='NA') {
 }
 
 #---------------------------------------
-ggplot_scatter <- function(U1, U2, col='void') {
-  tdf <- data.frame(U1=U1, U2=U2, col=col);
-  g <- ggplot(tdf) + xlab('') + ylab('') + geom_point(aes(x=U1, y=U2, color=col));
+ggplot_scatter <- function(U1, U2, lab='NA') {
+   tdf <- data.frame(U1=U1, U2=U2);
+   tdf$panel <- sprintf("rows=%d U1=[%f, %f] U2=[%f, %f] label=%s", nrow(tdf), min(U1), max(U1), min(U2), max(U2), lab);
+   g <- ggplot(tdf) + facet_wrap(ncol=1, panel ~ .) + xlab('') + ylab('') + geom_point(aes(x=U1, y=U2));
+   g <- g + theme(axis.title.x = element_blank(), axis.title.y = element_blank() );
   return(g);
 }
 
@@ -100,6 +105,7 @@ ggplot_table <- function(vals, base_ang=15, show_base=TRUE) {
   if(show_base) { g <- g + theme(axis.text.x = element_text(angle = base_ang) ) }
   else { g <- g + theme(axis.text.x = element_blank() ) }
 
+  g <- g + theme(axis.title.x = element_blank(), axis.title.y = element_blank() );
   return(g);
 }
 
